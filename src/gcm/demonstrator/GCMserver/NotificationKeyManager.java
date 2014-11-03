@@ -12,15 +12,23 @@ import org.json.simple.parser.JSONParser;
 
 public class NotificationKeyManager {
 
-
+	//Variables
     public ArrayList<NotificationKey> 	nkeys = new ArrayList<NotificationKey>();
     
+    //Constructor
     public NotificationKeyManager()
     {
     	loadNotificationKeys();
     }
     
-	public  void loadNotificationKeys()
+    //Logging function
+    private void log(String log)
+    {
+    	System.out.println("NKM: "+log);
+    }
+    
+    //Fill NotificationKeys ArrayList with NotificationKeys retrieved from storage (currently a txt file)
+	private void loadNotificationKeys()
     {
     	ArrayList<NotificationKey> result = new ArrayList<NotificationKey>();
     	//read line from txt files
@@ -38,14 +46,15 @@ public class NotificationKeyManager {
             		String keyName = (String)jobj.get("keyName");	//get the keyName of NotificationKey
             		String keyID = (String)jobj.get("keyID");		//get the keyID of NotificationKey
             		
-            		System.out.println("getNotificationKeys: \nkeyName: " + keyName + "\nkeyID: " + keyID );
+            		log("loadNotificationKeys: keyName: " + keyName); 
+            		log("loadNotificationKeys: keyID: " + keyID );
             		
             		ArrayList<String> regIDs = new ArrayList<String>();       		
             		JSONArray jArr = (JSONArray)jobj.get("regIDs");	//get the array containing the regIDs of NotificationKey
             		for (int j = 0; j < jArr.size(); j++)			//walk through all regIDs
             		{
             			regIDs.add((String)jArr.get(j));			//add regID to array of regIDs
-            			System.out.println("regID: " + jArr.get(j));
+            			log("loadNotificationKeys: regID: " + jArr.get(j));
             		}
             		result.add(new NotificationKey(keyName,keyID,regIDs));//add NotificationKey to array with all fields filled
             	}
@@ -53,39 +62,15 @@ public class NotificationKeyManager {
     	}
     	catch (Exception ex)
     	{
-    		System.out.println("Something went wrong with accessing notificationkeys.txt");
+    		log("Something went wrong with accessing notificationkeys.txt");
     	}
     	nkeys = result;
     }
 
-	public ArrayList<NotificationKey> getNotificationKeys()
-	{
-		return nkeys;
-	}
-	
-	public NotificationKey getNotificationKey(ArrayList<String> regIDs)
-    {
-    	for (NotificationKey nk : nkeys)
-    	{
-    		if ((nk.RegIDs.size() == regIDs.size()) && nk.RegIDs.containsAll(regIDs))
-    		{
-    			return nk;
-    		}
-    		else
-    			System.out.println("");
-    	}
-    	return null;
-    }
-
-	public void setNotificationKeys(ArrayList<NotificationKey> nkeys)
-	{
-		this.nkeys = nkeys;
-	}
-	
+	//Save NotificationKeys (currently to txt file)
 	@SuppressWarnings("unchecked")
- 	public void saveNotificationKeys(ArrayList<NotificationKey> nkeys)
+ 	private void saveNotificationKeys()
 	{
-		this.nkeys = nkeys;
 		//TODO: write nkeys to txt file using JSON
 		JSONArray jarrroot = new JSONArray();
 		for (NotificationKey nk : this.nkeys)
@@ -103,6 +88,29 @@ public class NotificationKeyManager {
 			jarrroot.add(jobj);
 		}
 
-		System.out.println(jarrroot);
+		log("saveNotificationKeys: " + jarrroot);
 	}
+	
+	//Request NotificationKey with given registrationIDs	
+	public NotificationKey getNotificationKey(ArrayList<String> regIDs)
+    {
+    	for (NotificationKey nk : nkeys)
+    	{
+    		if ((nk.RegIDs.size() == regIDs.size()) && nk.RegIDs.containsAll(regIDs))
+    		{
+    			return nk;
+    		}
+    	}
+    	return null;
+    }
+
+	//Add NotificationKey to list 
+	public void addNotificationKey(NotificationKey nk) {
+		// TODO Auto-generated method stub
+		this.nkeys.add(nk);
+		saveNotificationKeys();
+	}
+
+	//TODO: Use updateNotificationKey(NotificationKey nk) to replace existing key with updated one (removed user/added user/changed name)
+	//OR... seperate methods: addUser(...); removeUser(...); changeName(...);
 }

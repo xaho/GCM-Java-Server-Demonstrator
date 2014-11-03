@@ -55,6 +55,15 @@ import org.apache.http.message.BasicHeader;
 import org.apache.http.protocol.HTTP;
 import org.apache.http.util.EntityUtils;
 
+import java.awt.Button;
+import java.awt.Checkbox;
+import java.awt.CheckboxGroup;
+import java.awt.Choice;
+import java.awt.FlowLayout;
+import java.awt.Frame;
+import java.awt.Label;
+import java.awt.Panel;
+import java.awt.TextField;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -80,7 +89,7 @@ import gcm.demonstrator.GCMserver.NotificationKey;
  *
  * <p>For illustration purposes only.
  */
-public class SmackCcsClient {
+public class SmackCcsClient extends Frame{
 
     private static final Logger logger = Logger.getLogger("SmackCcsClient");
 
@@ -92,8 +101,8 @@ public class SmackCcsClient {
     
     private static ArrayList<String> clients = new ArrayList<String>();
     private static NotificationKeyManager NKM = new NotificationKeyManager();
-    private static ArrayList<NotificationKey> nkeys = new ArrayList<NotificationKey>();
 
+    private static boolean useGUI = false;
     static {
 
         ProviderManager.addExtensionProvider(GCM_ELEMENT_NAME, GCM_NAMESPACE,
@@ -105,6 +114,54 @@ public class SmackCcsClient {
                     return new GcmPacketExtension(json);
                 }
             });
+    }
+    
+    public SmackCcsClient()
+    {
+    	if (useGUI)
+    	{
+	    	setLayout(new FlowLayout());
+	    	Panel p1 = new Panel();
+	    	Panel p2 = new Panel();
+	    	
+	    	Choice ch1 = new Choice();
+	    	ch1.add("Device: ");
+	    	ch1.add("Group of devices: ");
+	    	p1.add(ch1);
+	    	
+	    	java.awt.List list1 = new java.awt.List();
+	    	p1.add(list1);
+	    	    	
+	    	Checkbox cb1 = new Checkbox("Collapsible");
+	    	p1.add(cb1);
+	    	Checkbox cb2 = new Checkbox("Delay while idle");
+	    	p1.add(cb2);
+	
+	    	Label lbl3 = new Label("Time to live: ");
+	    	p1.add(lbl3);
+	    	
+	    	Choice ch2 = new Choice();
+	    	ch2.add("0 Seconds");
+	    	ch2.add("4 Weeks");
+	    	p1.add(ch2);
+	    	
+	    	Button b1 = new Button("Send notification");
+	    	p1.add(b1);
+	    	
+	    	Button b2 = new Button("Add device to group");
+	    	p2.add(b2);
+	    	
+	    	add(p1);
+	    	add(p2);
+	    	setTitle("AWT Counter");  // "super" Frame sets title
+	        setSize(1280, 480);        // "super" Frame sets initial window size
+	        setVisible(true);  
+    	}
+    }
+    
+    private static void log(String log)
+    {
+    	System.out.println("SCC: " + log);
     }
 
     private XMPPConnection connection;
@@ -230,9 +287,10 @@ public class SmackCcsClient {
         if (timeToLive != null) {
             message.put("time_to_live", timeToLive);
         }
-        if (delayWhileIdle != null && delayWhileIdle) {
+        /*if (delayWhileIdle != null && delayWhileIdle) {
             message.put("delay_while_idle", true);
-        }
+        }*/
+        message.put("delay_while_idle",false);
       message.put("message_id", messageId);
       message.put("data", payload);
       return JSONValue.toJSONString(message);
@@ -351,19 +409,25 @@ public class SmackCcsClient {
     	}
     	catch (Exception ex)
     	{
-    		System.out.println("Something went wrong with accessing clients.txt");
+    		log("Something went wrong with accessing clients.txt");
     	}
     	
     	return result;
-    }    
+    }
+    
+    private static NotificationKey removeUserNotificationKey(NotificationKey nk)
+    {
+    	
+    	return nk;
+    }
     
     private static NotificationKey generateNotificationKey(ArrayList<String> regIDs, String name) 
     {
     	try
     	{
 			// TODO Auto-generated method stub
-	    	System.out.println("TODO: send message to generate NotificationKey.");
-	    	System.out.println("TODO: save generated NotificationKey.");
+	    	log("TODO: send message to generate NotificationKey.");
+	    	log("TODO: save generated NotificationKey.");
 	    	// Create GCM notification headers
 		    CloseableHttpClient client = HttpClients.createDefault();
 		    HttpPost post = new HttpPost("https://android.googleapis.com/gcm/notification");
@@ -391,7 +455,10 @@ public class SmackCcsClient {
 				    if (key.containsKey("notification_key"))
 				    {
 				    	//TODO: create notificationkey object and add to nkeys etc.
-				    	
+				    	log((String)key.get("notification_key"));
+				    	NotificationKey nk = new NotificationKey(name, (String)key.get("notification_key"),regIDs);
+				    	NKM.addNotificationKey(nk);
+				    	return nk;
 				    }
 				}
 				else 
@@ -408,8 +475,7 @@ public class SmackCcsClient {
 				client.close();
 		    }
 	    	NotificationKey nk = new NotificationKey(name,"Received KeyID",regIDs);
-	    	nkeys.add(nk);
-	    	NotificationKey.saveNotificationKeys(nkeys);
+	    	NKM.addNotificationKey(nk);
     	}
     	catch (Exception ex)
     	{
@@ -440,7 +506,47 @@ public class SmackCcsClient {
 		}
 		return ints;
     }
-
+	
+	public static void printComplexMenu(String menu)
+	{
+		switch (menu)
+		{
+		case "1":
+			log("");log("What should the server do?");
+			log("1. Send notification");
+			log("2. Add device to notificationKey (group of devices)");
+			log("3. Remove device form notificationKey (group of devices)");
+			//log("4. ");
+		    //log("5. Send regular notification to notificationkey which one client can dismiss for others.");
+			break;
+		case "1.1":
+			log("Send notification to what device(s)? (Seperate multiple devices with \" \"");
+			break;
+		case "1.1.1":
+			log("Should the earlier notifications still in queue be dismissed? (Collapsible)");
+			break;
+		case "1.1.1.1":
+			log("What should the time_to_live be in seconds? (Maximum of 2419200 (4 weeks))");
+			break;
+		case "1.1.1.1.1":
+			log("Should the message delay_while_idle? (Send message when client seeks connection or push it)");
+			break;
+		case "1.2":
+			log("What group are we going to add a device to?");
+			break;
+		case "1.2.1":
+			log("What device are we going to add?");
+			break;
+		case "1.3":
+			log("What group are we going to remove a device from?");
+			break;
+		case "1.3.1":
+			log("What device are we going to remove?");
+			break;
+		}
+	    log("8. Toggle printing menu.");log("9. Stop server.");log("0. Return to previous menu.");log("Current menu: " + menu);log("Input choice please:");
+	}
+	
     @SuppressWarnings("unchecked")
 	public static void main(String[] args) throws Exception {
         final long senderId = 673775556614L; 
@@ -452,7 +558,7 @@ public class SmackCcsClient {
 
         SmackCcsClient ccsClient = new SmackCcsClient();
         ccsClient.connect(senderId, password);
-        System.out.println("connected method done");
+        log("connected method done");
         logger.log(Level.INFO, "connected");
 
         //toRegId is an ID obtained by Android device when registering at GCM servers, should be transferred from application to FlexC server somehow.
@@ -465,13 +571,9 @@ public class SmackCcsClient {
         String message;
         Long timeToLive = 10000L;
 
-        NotificationKey.loadNotificationKeys();
-        nkeys = NotificationKey.getNotificationKeys();
         ///testing area
         
-        
         ///end of testing area
-
         boolean exit = false;
         boolean exitSubmenu = false;
         boolean printmenu = true;
@@ -480,137 +582,158 @@ public class SmackCcsClient {
         Scanner scanner = new Scanner(System.in);
         
         getClients();//fill clients ArrayList with RegIDs to know where to send notifications to.
+        String menu = "1";
+        
         
         while (!exit)
         {
-        	//Show user options
-        	if (printmenu)
-        		printMenu();
-        	
-        	try 
+        	if (useGUI)
+    		{
+				printComplexMenu(menu);
+				
+		    	
+		    	selection = scanner.nextInt();
+		    	if (Integer.toString(selection).equals("0") && menu != "1")
+		    	{
+		    		menu = menu.substring(0, menu.length()-2);
+		    		log("if");
+		    	}
+		    	else
+		    	{
+		    		menu = menu.concat("." + Integer.toString(selection));
+		    		log("else: "+ Integer.toString(selection));
+		    	}
+    		}
+        	else
         	{
-        		exitSubmenu = false;
-        		selection = scanner.nextInt();
-        		switch(selection)
-        		{
-        		case 1: 
-        			while (!exitSubmenu)
-        			{
-	        			
-	        			try 
+	        	//Show user options
+	        	if (printmenu)
+	        		printMenu();
+	        	
+	        	try 
+	        	{
+	        		exitSubmenu = false;
+	        		selection = scanner.nextInt();
+	        		switch(selection)
+	        		{
+	        		case 1: 
+	        			while (!exitSubmenu)
 	        			{
-	        				printSubMenu(selection);
-	        				selection = scanner.nextInt();
-	        			
-				            message = createJsonMessage(clients.get(selection), messageId, payload,
-				                    null, timeToLive, false);        
-				            ccsClient.sendDownstreamMessage(message);
-				            exitSubmenu = true;
+		        			
+		        			try 
+		        			{
+		        				printSubMenu(selection);
+		        				selection = scanner.nextInt();
+
+								messageId = ccsClient.nextMessageId();
+								payload.clear(); payload.put("Type", "Regular");
+					            message = createJsonMessage(clients.get(selection), messageId, payload,
+					                    null, timeToLive, false);        
+					            ccsClient.sendDownstreamMessage(message);
+					            exitSubmenu = true;
+		        			}
+		        			catch (Exception ex)
+		        			{
+		                		log("Invalid input, try again.");
+		        			}
 	        			}
-	        			catch (Exception ex)
+	        			break;
+	        		case 2: 
+	        			while (!exitSubmenu)
 	        			{
-	                		System.out.println("Invalid input, try again.");
+		        			
+		        			try 
+		        			{
+		        				printSubMenu(selection);
+		        				selection = scanner.nextInt();
+
+								messageId = ccsClient.nextMessageId();
+								payload.clear(); payload.put("Type", "Collapsible");
+					            message = createJsonMessage(clients.get(selection), messageId, payload,
+					                    collapseKey, timeToLive, false);        
+					            ccsClient.sendDownstreamMessage(message);
+					            exitSubmenu = true;
+		        			}
+		        			catch (Exception ex)
+		        			{
+		                		log("Invalid input, try again.");
+		        			}
 	        			}
-        			}
-        			break;
-        		case 2: 
-        			while (!exitSubmenu)
-        			{
-	        			
-	        			try 
+	        			break;
+	        		case 3:
+	        			while (!exitSubmenu)
 	        			{
-	        				printSubMenu(selection);
-	        				selection = scanner.nextInt();
-	        			
-				            message = createJsonMessage(clients.get(selection), messageId, payload,
-				                    collapseKey, timeToLive, false);        
-				            ccsClient.sendDownstreamMessage(message);
-				            exitSubmenu = true;
-	        			}
-	        			catch (Exception ex)
-	        			{
-	                		System.out.println("Invalid input, try again.");
-	        			}
-        			}
-        			break;
-        		case 3:
-        			while (!exitSubmenu)
-        			{
-	        			
-	        			try 
-	        			{
-	        				printSubMenu(selection);
-	        				ArrayList<Integer> IDs; 
-	        				IDs = getIntsFromLine();//TODO: Filter duplicates?
-	        				if (IDs.size() > 0)
-	        				{
-		        				ArrayList<String> regIDs = new ArrayList<String>();
-		        				for (int ID : IDs)
+		        			
+		        			try 
+		        			{
+		        				printSubMenu(selection);
+		        				ArrayList<Integer> IDs; 
+		        				IDs = getIntsFromLine();//TODO: Filter duplicates?
+		        				if (IDs.size() > 0)
 		        				{
-		        					regIDs.add(clients.get(ID));
-		        				}
-		        				
-		        				NotificationKey nk = NotificationKey.getNotificationKey(regIDs);
-		        				if (nk != null)
-		        				{
-			        				System.out.println("Found NotificationKey:\nKeyName: " + nk.KeyName);
-			        				System.out.println("KeyID: " + nk.KeyID);
-			        				for (String regID : nk.RegIDs)
+			        				ArrayList<String> regIDs = new ArrayList<String>();
+			        				for (int ID : IDs)
 			        				{
-			        					System.out.println("RegID: "+regID);
+			        					regIDs.add(clients.get(ID));
 			        				}
-			        				System.out.println("TODO: send message to notificationID.");
-			        				exitSubmenu = true;
-		        				}
-		        				else
-		        				{
-		        			    	System.out.println("No NotificationKey found with entered IDs. \n" +
-		        			    			"Enter a name to create a new NotificationKey or enter \"abort\" to abort.");
-		        					BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
-		        					String name = br.readLine();
-		        					if (!name.equals("abort") && !name.equals("") /*&& name does not exist yet*/)
-		        					{
-		        						nk = generateNotificationKey(regIDs, name);
-				        				System.out.println("TODO: send message to notificationID.");
-		    	        				exitSubmenu = true;
-		        					}
-		        				}
-		        				/*for (int i = 0; i < IDs.size(); i++)
-		        				{
+			        				
+			        				NotificationKey nk = NKM.getNotificationKey(regIDs);
+			        				if (nk != null)
+			        				{
+				        				log("Found NotificationKey:\nKeyName: " + nk.KeyName);
+				        				log("KeyID: " + nk.KeyID);
+				        				for (String regID : nk.RegIDs)
+				        				{
+				        					log("RegID: "+regID);
+				        				}
+			        				}
+			        				else
+			        				{
+			        			    	log("No NotificationKey found with entered IDs. \n" +
+			        			    			"Enter a name to create a new NotificationKey or enter \"abort\" to abort.");
+			        					BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+			        					String name = br.readLine();
+			        					if (!name.equals("abort") && !name.equals("")) //&& name does not exist yet
+			        					{
+			        						nk = generateNotificationKey(regIDs, name);
+			        					}
+			        				}
 									messageId = ccsClient.nextMessageId();
-			    					message = createJsonMessage(clients.get(IDs.get(i)), messageId, payload,
+									payload.clear(); payload.put("Type", "NotificationKey");
+			    					message = createJsonMessage(nk.KeyID, messageId, payload,
 						                    null, timeToLive, false);        
 						            ccsClient.sendDownstreamMessage(message);
-		        				}*/
-	        				}
-	        				else 
-	        				{
-	        					System.out.println("No valid input received");
-	        				}
+	    	        				exitSubmenu = true;
+		        				}
+		        				else 
+		        				{
+		        					log("No valid input received");
+		        				}
+		        			}
+		        			catch (Exception ex)
+		        			{
+		                		log("Invalid input, try again.");
+		        			}
 	        			}
-	        			catch (Exception ex)
-	        			{
-	                		System.out.println("Invalid input, try again.");
-	        			}
-        			}
-        			break;
-		        case 8://toggle menu
-		        	if (printmenu)
-		        		printmenu = false;
-		        	else
-		        		printmenu = true;
-		        	break;
-		        case 9://stop server?
-		        	exit = true;
-		        	System.out.println("Stopping server");
-		        	break;
-		    	default: 
-		    		break;
-        		}
-        	}
-        	catch (Exception e)
-        	{
-        		System.out.println("Invalid input, try again.");
+	        			break;
+			        case 8://toggle menu
+			        	if (printmenu)
+			        		printmenu = false;
+			        	else
+			        		printmenu = true;
+			        	break;
+			        case 9://stop server?
+			        	exit = true;
+			        	log("Stopping server");
+			        	break;
+			    	default: 
+			    		break;
+	        		}
+	        	}
+	        	catch (Exception e)
+	        	{
+	        		log("Invalid input, try again.");
+	        	}
         	}
         }
         scanner.close();
@@ -620,35 +743,35 @@ public class SmackCcsClient {
     {
     	if (submenu == 1 || submenu == 2)
     	{
-        	System.out.println();
-            System.out.println("What client should the notification be sent to?");
+        	log("");
+            log("What client should the notification be sent to?");
     	}
     	else if (submenu == 3)
     	{
-        	System.out.println();
-            System.out.println("What clients should the notification be sent to?");
-        	System.out.println("(Seperate multiple clients by a space \" \")");
+        	log("");
+            log("What clients should the notification be sent to?");
+        	log("(Seperate multiple clients by a space \" \")");
     	}
         for (int i = 0; i < clients.size(); i++)
         {
-        	System.out.println("Client " + i);
+        	log("Client " + i);
         }
     }
     
     private static void printMenu()
     {
-    	System.out.println();
-    	System.out.println();
-        System.out.println("What should the server do?");
-        System.out.println("1. Send regular notification to client.");
-        System.out.println("2. Send collapsible notification to client. (Will only deliver last message to app)");
-        System.out.println("3. Send regular notification to multiple clients using notificationkey.");
-        System.out.println("4. Send collapsible notification to multiple clients using notificationkey.");
-        //System.out.println("5. Send regular notification to notificationkey which one client can dismiss for others.");
-        System.out.println("8. Toggle printing menu.");
-        System.out.println("9. Stop server.");
-    	System.out.println();
-    	System.out.println("Input choice please:");
+    	log("");
+    	log("");
+        log("What should the server do?");
+        log("1. Send regular notification to client.");
+        log("2. Send collapsible notification to client. (Will only deliver last message to app)");
+        log("3. Send regular notification to multiple clients using notificationkey.");
+        log("4. Send collapsible notification to multiple clients using notificationkey.");
+        //log("5. Send regular notification to notificationkey which one client can dismiss for others.");
+        log("8. Toggle printing menu.");
+        log("9. Stop server.");
+    	log("");
+    	log("Input choice please:");
     }
 
     /**
@@ -706,12 +829,12 @@ public class SmackCcsClient {
 
         @Override
         public void reconnectingIn(int seconds) {
-            logger.log(Level.INFO, "Reconnecting in %d secs", seconds);
+            logger.log(Level.INFO, "Reconnecting in " + seconds + "seconds");
         }
 
         @Override
         public void connectionClosedOnError(Exception e) {
-            logger.info("Connection closed on error.");
+            logger.info("Connection closed on error: " + e.toString());
         }
 
         @Override
@@ -720,3 +843,7 @@ public class SmackCcsClient {
         }
     }
 }
+
+//To implement: 
+//GenerateNotificationKey -> key already exists with identical regIDs Error with Notification key: {"error":"notification_key already exists"}
+//{"notification_key":"APA91bF1JQgPKvIoHiuywYa0-FZSEzISl55xojeZsfdQaMrU_ZKYwy3opkLzqiObOXE5gCb15_pzZG2U_MmUFEktKOXCUNJKkIEWIkcVlBhOYDLCNrlxgP0"}
