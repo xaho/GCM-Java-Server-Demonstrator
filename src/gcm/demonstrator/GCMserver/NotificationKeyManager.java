@@ -2,6 +2,7 @@ package gcm.demonstrator.GCMserver;
 
 import java.nio.charset.Charset;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
@@ -71,7 +72,6 @@ public class NotificationKeyManager {
 	@SuppressWarnings("unchecked")
  	private void saveNotificationKeys()
 	{
-		//TODO: write nkeys to txt file using JSON
 		JSONArray jarrroot = new JSONArray();
 		for (NotificationKey nk : this.nkeys)
 		{
@@ -87,7 +87,17 @@ public class NotificationKeyManager {
 			jobj.put("regIDs",jarr);
 			jarrroot.add(jobj);
 		}
-
+		Path path = Paths.get("notificationkeys.txt");
+		try
+		{
+			List<String> lines = new ArrayList<String>(); 
+			lines.add(jarrroot.toString());
+			Files.write(path, lines, Charset.defaultCharset());
+		}
+		catch (Exception ex)
+		{
+			log(ex.toString());
+		}
 		log("saveNotificationKeys: " + jarrroot);
 	}
 	
@@ -106,7 +116,6 @@ public class NotificationKeyManager {
 
 	//Add NotificationKey to list 
 	public void addNotificationKey(NotificationKey nk) {
-		// TODO Auto-generated method stub
 		this.nkeys.add(nk);
 		saveNotificationKeys();
 	}

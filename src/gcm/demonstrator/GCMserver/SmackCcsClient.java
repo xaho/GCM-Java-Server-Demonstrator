@@ -426,7 +426,6 @@ public class SmackCcsClient extends Frame{
     	try
     	{
 			// TODO Auto-generated method stub
-	    	log("TODO: send message to generate NotificationKey.");
 	    	log("TODO: save generated NotificationKey.");
 	    	// Create GCM notification headers
 		    CloseableHttpClient client = HttpClients.createDefault();
@@ -455,7 +454,7 @@ public class SmackCcsClient extends Frame{
 				    if (key.containsKey("notification_key"))
 				    {
 				    	//TODO: create notificationkey object and add to nkeys etc.
-				    	log((String)key.get("notification_key"));
+				    	log("Received: "+(String)key.get("notification_key"));
 				    	NotificationKey nk = new NotificationKey(name, (String)key.get("notification_key"),regIDs);
 				    	NKM.addNotificationKey(nk);
 				    	return nk;
@@ -474,8 +473,6 @@ public class SmackCcsClient extends Frame{
 		    {
 				client.close();
 		    }
-	    	NotificationKey nk = new NotificationKey(name,"Received KeyID",regIDs);
-	    	NKM.addNotificationKey(nk);
     	}
     	catch (Exception ex)
     	{
@@ -680,7 +677,8 @@ public class SmackCcsClient extends Frame{
 			        				NotificationKey nk = NKM.getNotificationKey(regIDs);
 			        				if (nk != null)
 			        				{
-				        				log("Found NotificationKey:\nKeyName: " + nk.KeyName);
+				        				log("Found NotificationKey: ");
+				        				log("KeyName: " + nk.KeyName);
 				        				log("KeyID: " + nk.KeyID);
 				        				for (String regID : nk.RegIDs)
 				        				{
@@ -700,6 +698,7 @@ public class SmackCcsClient extends Frame{
 			        				}
 									messageId = ccsClient.nextMessageId();
 									payload.clear(); payload.put("Type", "NotificationKey");
+									payload.put("NotificationKey", nk.KeyID);
 			    					message = createJsonMessage(nk.KeyID, messageId, payload,
 						                    null, timeToLive, false);        
 						            ccsClient.sendDownstreamMessage(message);
@@ -763,10 +762,10 @@ public class SmackCcsClient extends Frame{
     	log("");
     	log("");
         log("What should the server do?");
-        log("1. Send regular notification to client.");
-        log("2. Send collapsible notification to client. (Will only deliver last message to app)");
+        log("1. Send regular notification to single client.");
+        log("2. Send collapsible notification to single client. (Will only deliver last message to app when connection is made)");
         log("3. Send regular notification to multiple clients using notificationkey.");
-        log("4. Send collapsible notification to multiple clients using notificationkey.");
+        //log("4. Send collapsible notification to multiple clients using notificationkey.");
         //log("5. Send regular notification to notificationkey which one client can dismiss for others.");
         log("8. Toggle printing menu.");
         log("9. Stop server.");
