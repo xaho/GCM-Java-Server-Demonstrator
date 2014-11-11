@@ -48,14 +48,14 @@ public class NotificationKeyManager {
             		String keyID = (String)jobj.get("keyID");		//get the keyID of NotificationKey
             		
             		log("loadNotificationKeys: keyName: " + keyName); 
-            		log("loadNotificationKeys: keyID: " + keyID );
+            		log("loadNotificationKeys: keyID: " + keyID.substring(5,8) );
             		
             		ArrayList<String> regIDs = new ArrayList<String>();       		
             		JSONArray jArr = (JSONArray)jobj.get("regIDs");	//get the array containing the regIDs of NotificationKey
             		for (int j = 0; j < jArr.size(); j++)			//walk through all regIDs
             		{
             			regIDs.add((String)jArr.get(j));			//add regID to array of regIDs
-            			log("loadNotificationKeys: regID: " + jArr.get(j));
+            			log("loadNotificationKeys: regID: " + jArr.get(j).toString().substring(5,8));
             		}
             		result.add(new NotificationKey(keyName,keyID,regIDs));//add NotificationKey to array with all fields filled
             	}
@@ -63,7 +63,7 @@ public class NotificationKeyManager {
     	}
     	catch (Exception ex)
     	{
-    		log("Something went wrong with accessing notificationkeys.txt");
+    		log("Something went wrong with accessing notificationkeys.txt, exception: " + ex.toString());
     	}
     	nkeys = result;
     }
